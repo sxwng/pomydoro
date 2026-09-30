@@ -17,6 +17,11 @@ main {
   padding: 16px;
 }
 
+.mode-img {
+  height: 5em;
+  vertical-align: middle;
+}
+
 #timer {
   font-size: 4rem;
   font-variant-numeric: tabular-nums;

@@ -74,6 +74,13 @@ const state = {
   tickId: null,
 };
 
+// Only rebuild when the image changes, so it isn't recreated every tick.
+function setModeImage(src, alt) {
+  const img = el.mode.querySelector('.mode-img');
+  if (img && img.getAttribute('src') === src) return;
+  el.mode.innerHTML = `<img class="mode-img" src="${src}" alt="${alt}">`;
+}
+
 function render() {
   const seg = state.segments[state.index];
   el.timer.textContent = formatTime(Math.ceil(state.remainingMs / 1000));
@@ -83,11 +90,19 @@ function render() {
 
   if (!seg) {
     el.body.className = 'idle';
-    el.mode.textContent = state.segments.length ? 'Finished!' : 'Ready';
+    if (state.segments.length) {
+      el.mode.textContent = 'Finished!';
+    } else {
+      setModeImage('images/ready.png', 'Ready');
+    }
     el.progress.textContent = '';
   } else {
     el.body.className = seg.type;
-    el.mode.textContent = seg.type === 'study' ? 'Study mode' : 'Break mode';
+    if (seg.type === 'study') {
+      setModeImage('images/study.png', 'Study mode');
+    } else {
+      setModeImage('images/break.png', 'Break mode');
+    }
     el.progress.textContent = `Segment ${state.index + 1} of ${state.segments.length}`;
   }
 

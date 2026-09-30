@@ -8,7 +8,7 @@
 </head>
 <body class="idle">
   <main>
-    <h1 id="mode">Ready</h1>
+    <h1 id="mode"><img class="mode-img" src="images/ready.png" alt="Ready"></h1>
     <div id="timer">00:00:00</div>
     <div id="end-time">Next segment at 00:00:00</div>
     <p id="progress"></p>
@@ -27,7 +27,7 @@
     <form id="config" method="dialog">
       <h2>Settings</h2>
       <label for="pattern">Study pattern (minutes, study-break-study-…, end with f)</label>
-      <input id="pattern" type="text" value="50-10-40-10-30-10-20-10-10-f" spellcheck="false">
+      <input id="pattern" type="text" value="1-1-1-f" spellcheck="false">
       <p id="pattern-locked" hidden>Reset the timer to change the pattern.</p>
       <p id="error" role="alert"></p>
       <div class="dialog-buttons">
