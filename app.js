@@ -56,7 +56,14 @@ const el = {
   config: document.getElementById('config'),
   pattern: document.getElementById('pattern'),
   error: document.getElementById('error'),
+  settings: document.getElementById('settings'),
+  settingsOpen: document.getElementById('settings-open'),
+  settingsCancel: document.getElementById('settings-cancel'),
+  patternLocked: document.getElementById('pattern-locked'),
 };
+
+// Last saved pattern; the input is reverted to this when the dialog is cancelled.
+let savedPattern = el.pattern.value;
 
 const state = {
   segments: [],
@@ -72,7 +79,7 @@ function render() {
   el.timer.textContent = formatTime(Math.ceil(state.remainingMs / 1000));
   // While paused, the end time keeps sliding forward, so project it from now.
   const endMs = state.running ? state.endTime : Date.now() + state.remainingMs;
-  el.endTime.textContent = seg ? formatClock(endMs) : '--:--:--';
+  el.endTime.textContent = `Next segment at ${seg ? formatClock(endMs) : '--:--:--'}`;
 
   if (!seg) {
     el.body.className = 'idle';
@@ -88,6 +95,7 @@ function render() {
   el.pause.textContent = state.running ? 'Pause' : 'Resume';
   el.start.disabled = !!seg;
   el.pattern.disabled = !!seg;
+  el.patternLocked.hidden = !seg;
 }
 
 function tick() {
@@ -122,12 +130,12 @@ function stopTicking() {
 
 function start() {
   try {
-    state.segments = parsePattern(el.pattern.value);
+    state.segments = parsePattern(savedPattern);
   } catch (e) {
+    openSettings();
     el.error.textContent = e.message;
     return;
   }
-  el.error.textContent = '';
 
   // Audio must be unlocked by a user gesture; the Start click counts.
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -161,6 +169,27 @@ function reset() {
 el.start.addEventListener('click', start);
 el.pause.addEventListener('click', togglePause);
 el.reset.addEventListener('click', reset);
-el.config.addEventListener('submit', e => { e.preventDefault(); start(); });
+function openSettings() {
+  el.pattern.value = savedPattern;
+  el.error.textContent = '';
+  el.settings.showModal();
+}
+
+function saveSettings(e) {
+  if (!el.pattern.disabled) {
+    try {
+      parsePattern(el.pattern.value);
+    } catch (err) {
+      e.preventDefault();  // keep the dialog open
+      el.error.textContent = err.message;
+      return;
+    }
+    savedPattern = el.pattern.value;
+  }
+}
+
+el.settingsOpen.addEventListener('click', openSettings);
+el.settingsCancel.addEventListener('click', () => el.settings.close());
+el.config.addEventListener('submit', saveSettings);
 
 render();

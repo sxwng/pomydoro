@@ -19,12 +19,23 @@
       <button id="reset">Reset</button>
     </div>
 
-    <form id="config">
+  </main>
+
+  <button id="settings-open" type="button" aria-label="Settings" title="Settings">&#9881;</button>
+
+  <dialog id="settings">
+    <form id="config" method="dialog">
+      <h2>Settings</h2>
       <label for="pattern">Study pattern (minutes, study-break-study-…, end with f)</label>
       <input id="pattern" type="text" value="50-10-40-10-30-10-20-10-10-f" spellcheck="false">
+      <p id="pattern-locked" hidden>Reset the timer to change the pattern.</p>
       <p id="error" role="alert"></p>
+      <div class="dialog-buttons">
+        <button id="settings-cancel" type="button">Cancel</button>
+        <button id="settings-save" type="submit">Save</button>
+      </div>
     </form>
-  </main>
+  </dialog>
   <script src="app.js"></script>
 </body>
 </html>

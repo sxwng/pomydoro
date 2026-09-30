@@ -29,8 +29,25 @@ main {
   margin: 0 0.25rem;
 }
 
-#config {
-  margin-top: 2rem;
+#settings-open {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+#settings {
+  width: min(28rem, calc(100vw - 32px));
+  box-sizing: border-box;
+}
+
+#settings h2 {
+  margin-top: 0;
 }
 
 #config label {
@@ -39,7 +56,8 @@ main {
 }
 
 #pattern {
-  width: min(24rem, 100%);
+  width: 100%;
+  box-sizing: border-box;
   font-family: monospace;
   font-size: 1rem;
   padding: 0.3rem;
@@ -48,4 +66,10 @@ main {
 #error {
   color: #b00020;
   min-height: 1.2em;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
