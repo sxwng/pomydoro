@@ -1,3 +1,45 @@
+/* light by default; dark follows the OS unless the user picked a theme */
+:root {
+  color-scheme: light;
+  --bg-idle: #f4f4f4;
+  --bg-study: #e3d7f7;
+  --bg-break: #d4f5d9;
+  --text: #222;
+  --error: #b00020;
+  --img-filter: none;
+  --widget-bg: rgba(255, 255, 255, 0.6);
+  --widget-border: rgba(0, 0, 0, 0.08);
+  --accent: #6a3fb5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg-idle: #1e1e22;
+    --bg-study: #2c2340;
+    --bg-break: #1f3326;
+    --text: #eee;
+    --error: #ff7a8a;
+    --img-filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #fff);
+    --widget-bg: rgba(255, 255, 255, 0.07);
+    --widget-border: rgba(255, 255, 255, 0.12);
+    --accent: #b99cf0;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-idle: #1e1e22;
+  --bg-study: #2c2340;
+  --bg-break: #1f3326;
+  --text: #eee;
+  --error: #ff7a8a;
+  --img-filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #fff);
+  --widget-bg: rgba(255, 255, 255, 0.07);
+  --widget-border: rgba(255, 255, 255, 0.12);
+  --accent: #b99cf0;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -5,12 +47,119 @@ body {
   align-items: center;
   justify-content: center;
   font-family: system-ui, sans-serif;
-  background: #f4f4f4;
-  transition: background 0.3s;
+  color: var(--text);
+  background: var(--bg-idle);
+  transition: background 0.3s, color 0.3s;
 }
 
-body.study { background: #e3d7f7; } 
-body.break { background: #d4f5d9; } 
+body.study { background: var(--bg-study); }
+body.break { background: var(--bg-break); }
+
+#widgets {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.widget {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.7rem 0.4rem 0.4rem;
+  border-radius: 12px;
+  background: var(--widget-bg);
+  border: 1px solid var(--widget-border);
+  font-size: 0.9rem;
+}
+
+.clock-face {
+  width: 44px;
+  height: 44px;
+}
+
+.clock-rim {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+}
+
+.clock-ticks line {
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.5;
+}
+
+.hand {
+  stroke: currentColor;
+  stroke-linecap: round;
+}
+
+.hand-hour { stroke-width: 5; }
+.hand-minute { stroke-width: 3.5; }
+.hand-second { stroke: var(--accent); stroke-width: 1.5; }
+.clock-pin { fill: var(--accent); }
+
+#clock-digital {
+  font-variant-numeric: tabular-nums;
+}
+
+#music-widget[hidden] {
+  display: none;
+}
+
+.music-info {
+  width: 9rem;
+  min-width: 0;
+  padding-left: 0.3rem;
+}
+
+#music-track,
+#music-artist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#music-artist {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.music-controls {
+  display: flex;
+}
+
+.music-controls button {
+  display: flex;
+  padding: 0.25rem;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.music-controls button:hover {
+  background: var(--widget-border);
+}
+
+.music-controls svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+#music-toggle .icon-pause,
+#music-toggle.playing .icon-play {
+  display: none;
+}
+
+#music-toggle.playing .icon-pause {
+  display: block;
+}
 
 main {
   text-align: center;
@@ -20,6 +169,7 @@ main {
 .mode-img {
   height: 5em;
   vertical-align: middle;
+  filter: var(--img-filter);
 }
 
 #timer {
@@ -43,6 +193,7 @@ main {
   padding: 0.3rem 0.5rem;
   background: none;
   border: none;
+  color: inherit;
   cursor: pointer;
 }
 
@@ -51,8 +202,25 @@ main {
   box-sizing: border-box;
 }
 
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
 #settings h2 {
-  margin-top: 0;
+  margin: 0;
+}
+
+#theme-toggle {
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0.2rem 0.4rem;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 #config label {
@@ -69,7 +237,7 @@ main {
 }
 
 #error {
-  color: #b00020;
+  color: var(--error);
   min-height: 1.2em;
 }
 

@@ -5,8 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pomydoro</title>
   <link rel="stylesheet" href="style.css">
+  <script>
+    // apply saved theme before first paint to avoid a flash
+    try {
+      const t = localStorage.getItem('theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
 </head>
 <body class="idle">
+  <aside id="widgets">
+    <div class="widget" id="clock-widget">
+      <svg class="clock-face" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="46" class="clock-rim"/>
+        <g class="clock-ticks"></g>
+        <line id="hand-hour" class="hand hand-hour" x1="50" y1="50" x2="50" y2="28"/>
+        <line id="hand-minute" class="hand hand-minute" x1="50" y1="50" x2="50" y2="16"/>
+        <line id="hand-second" class="hand hand-second" x1="50" y1="56" x2="50" y2="12"/>
+        <circle cx="50" cy="50" r="3" class="clock-pin"/>
+      </svg>
+      <div id="clock-digital">00:00:00</div>
+      <div id="time-studying">Time studying: 00:00:00</div>
+    </div>
+
+    <div class="widget" id="music-widget" hidden>
+      <div class="music-info">
+        <div id="music-track"></div>
+        <div id="music-artist"></div>
+      </div>
+      <div class="music-controls">
+        <button id="music-previous" type="button" aria-label="Previous track" title="Previous track">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>
+        </button>
+        <button id="music-toggle" type="button" aria-label="Play" title="Play">
+          <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14l12-7z"/></svg>
+          <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        </button>
+        <button id="music-next" type="button" aria-label="Next track" title="Next track">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
   <main>
     <h1 id="mode"><img class="mode-img" src="images/ready.png" alt="Ready"></h1>
     <div id="timer">00:00:00</div>
@@ -25,7 +66,10 @@
 
   <dialog id="settings">
     <form id="config" method="dialog">
-      <h2>Settings</h2>
+      <div class="settings-header">
+        <h2>Settings</h2>
+        <button id="theme-toggle" type="button"></button>
+      </div>
       <label for="pattern">Study pattern (minutes, study-break-study-…, end with f)</label>
       <input id="pattern" type="text" value="1-1-1-f" spellcheck="false">
       <p id="pattern-locked" hidden>Reset the timer to change the pattern.</p>
