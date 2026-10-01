@@ -20,9 +20,11 @@ function formatTime(totalSeconds) {
 }
 
 // wall-clock time (user's local time zone) as HH:MM:SS
-function formatClock(ms) {
+function formatClock(ms, includeSeconds = true) {
   const d = new Date(ms);
-  return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
+  const time = [d.getHours(), d.getMinutes()];
+  if (includeSeconds) time.push(d.getSeconds());
+  return time.map(n => String(n).padStart(2, '0')).join(':');
 }
 
 // short beep sequence indicating the end of a segment; returns its length in ms
@@ -68,6 +70,9 @@ const el = {
   handSecond: document.getElementById('hand-second'),
   clockDigital: document.getElementById('clock-digital'),
   timeStudying: document.getElementById('time-studying'),
+  totalEndTime: document.getElementById('total-end-time'),
+  sessionBar: document.getElementById('session-bar'),
+  sessionBarFill: document.getElementById('session-bar-fill'),
   musicWidget: document.getElementById('music-widget'),
   musicTrack: document.getElementById('music-track'),
   musicArtist: document.getElementById('music-artist'),
@@ -106,13 +111,47 @@ function elapsedMs() {
   return Math.max(0, ms);
 }
 
+// progress through all segments, as a bar in the clock widget
+function renderSessionBar() {
+  const totalMs = state.segments.reduce((sum, seg) => sum + seg.seconds * 1000, 0);
+  const pct = totalMs ? Math.min(100, (elapsedMs() / totalMs) * 100) : 0;
+  el.sessionBarFill.style.width = `${pct}%`;
+  el.sessionBar.setAttribute('aria-valuenow', Math.round(pct));
+}
+
+// big countdown drawn with digit/colon images; preload them so new digits don't flash in
+// each mode has its own glyph set; idle/finished uses the study set
+const glyphSrc = (ch, mode) => (ch === ':' ? `images/${mode}-colon.png` : `images/${mode}-digit-${ch}.png`);
+['study', 'break'].forEach(mode =>
+  '0123456789:'.split('').forEach(ch => { new Image().src = glyphSrc(ch, mode); }));
+
+// only replace the glyphs that changed
+function renderTimer(text, mode) {
+  el.timer.setAttribute('aria-label', text);
+  if (el.timer.children.length !== text.length) {
+    el.timer.innerHTML = text.split('').map(ch =>
+      `<span class="${ch === ':' ? 'glyph colon' : 'glyph'}"><img src="${glyphSrc(ch, mode)}" alt=""></span>`).join('');
+    return;
+  }
+  [...text].forEach((ch, i) => {
+    const slot = el.timer.children[i];
+    const src = glyphSrc(ch, mode);
+    // replace the whole <img> rather than swapping src, so no trace of the old glyph remains
+    if (slot.firstChild.getAttribute('src') !== src) slot.replaceChildren(Object.assign(new Image(), { src, alt: '' }));
+  });
+}
+
 function render() {
   const seg = state.segments[state.index];
-  el.timer.textContent = formatTime(Math.ceil(state.remainingMs / 1000));
+  renderTimer(formatTime(Math.ceil(state.remainingMs / 1000)), seg && seg.type === 'break' ? 'break' : 'study');
   // While paused, the end time keeps sliding forward, so project it from now.
   const endMs = state.running ? state.endTime : Date.now() + state.remainingMs;
-  el.endTime.textContent = `Next segment at ${seg ? formatClock(endMs) : '--:--:--'}`;
+  el.endTime.textContent = `Next segment at ${seg ? formatClock(endMs, false) : '--:--'}`;
+  // add the segments still to come after this one
+  const laterMs = state.segments.slice(state.index + 1).reduce((sum, s) => sum + s.seconds * 1000, 0);
+  el.totalEndTime.textContent = `End time: ${seg ? formatClock(endMs + laterMs, false) : '--:--'}`;
   el.timeStudying.textContent = `Time studying: ${formatTime(Math.floor(elapsedMs() / 1000))}`;
+  renderSessionBar();
 
   if (!seg) {
     el.body.className = 'idle';

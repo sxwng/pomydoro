@@ -8,7 +8,7 @@ images drawn by @sxwng
 
 to show Apple Music controls in the upper left, run the local helper alongside the page:
 
-```
+``` bash
 node music-helper.js
 ```
 

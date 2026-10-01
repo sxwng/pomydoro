@@ -15,6 +15,7 @@
 </head>
 <body class="idle">
   <aside id="widgets">
+    <!-- clock widget -->
     <div class="widget" id="clock-widget">
       <svg class="clock-face" viewBox="0 0 100 100" aria-hidden="true">
         <circle cx="50" cy="50" r="46" class="clock-rim"/>
@@ -25,9 +26,18 @@
         <circle cx="50" cy="50" r="3" class="clock-pin"/>
       </svg>
       <div id="clock-digital">00:00:00</div>
-      <div id="time-studying">Time studying: 00:00:00</div>
+      <div id="session-bar" role="progressbar" aria-label="Session progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="session-bar-fill"></div>
+      </div>
     </div>
 
+    <!-- study time widget -->
+    <div class="widget" id="study-time-widget">
+      <div id="time-studying">Time studying: 00:00:00</div>
+      <div id="total-end-time">End time: 00:00:00</div>
+    </div>
+
+    <!-- music widget -->
     <div class="widget" id="music-widget" hidden>
       <div class="music-info">
         <div id="music-track"></div>
@@ -70,8 +80,8 @@
         <h2>Settings</h2>
         <button id="theme-toggle" type="button"></button>
       </div>
-      <label for="pattern">Study pattern (minutes, study-break-study-…, end with f)</label>
-      <input id="pattern" type="text" value="1-1-1-f" spellcheck="false">
+      <label for="pattern">Study pattern (minutes, study-break-study-…, end with -f)</label>
+      <input id="pattern" type="text" value="25-5-25-5-25-15-f" spellcheck="false">
       <p id="pattern-locked" hidden>Reset the timer to change the pattern.</p>
       <p id="error" role="alert"></p>
       <div class="dialog-buttons">
