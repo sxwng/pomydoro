@@ -73,6 +73,8 @@ const el = {
   totalEndTime: document.getElementById('total-end-time'),
   sessionBar: document.getElementById('session-bar'),
   sessionBarFill: document.getElementById('session-bar-fill'),
+  widgets: document.getElementById('widgets'),
+  widgetToggles: document.querySelectorAll('#widget-toggles input'),
   musicWidget: document.getElementById('music-widget'),
   musicTrack: document.getElementById('music-track'),
   musicArtist: document.getElementById('music-artist'),
@@ -120,10 +122,12 @@ function renderSessionBar() {
 }
 
 // big countdown drawn with digit/colon images; preload them so new digits don't flash in
-// each mode has its own glyph set; idle/finished uses the study set
+// each mode has its own glyph set; idle/finished uses the grey ready set, which only
+// needs 0 and the colon since the timer always reads 00:00:00 there
 const glyphSrc = (ch, mode) => (ch === ':' ? `images/${mode}-colon.png` : `images/${mode}-digit-${ch}.png`);
 ['study', 'break'].forEach(mode =>
   '0123456789:'.split('').forEach(ch => { new Image().src = glyphSrc(ch, mode); }));
+'0:'.split('').forEach(ch => { new Image().src = glyphSrc(ch, 'ready'); });
 
 // only replace the glyphs that changed
 function renderTimer(text, mode) {
@@ -143,7 +147,7 @@ function renderTimer(text, mode) {
 
 function render() {
   const seg = state.segments[state.index];
-  renderTimer(formatTime(Math.ceil(state.remainingMs / 1000)), seg && seg.type === 'break' ? 'break' : 'study');
+  renderTimer(formatTime(Math.ceil(state.remainingMs / 1000)), seg ? seg.type : 'ready');
   // While paused, the end time keeps sliding forward, so project it from now.
   const endMs = state.running ? state.endTime : Date.now() + state.remainingMs;
   el.endTime.textContent = `Next segment at ${seg ? formatClock(endMs, false) : '--:--'}`;
@@ -156,7 +160,7 @@ function render() {
   if (!seg) {
     el.body.className = 'idle';
     if (state.segments.length) {
-      el.mode.textContent = 'Finished!';
+      setModeImage('images/done.png', 'Finished!');
     } else {
       setModeImage('images/ready.png', 'Ready');
     }
@@ -249,9 +253,40 @@ function reset() {
 el.start.addEventListener('click', start);
 el.pause.addEventListener('click', togglePause);
 el.reset.addEventListener('click', reset);
+// widget visibility: widget id -> enabled. all enabled unless the user turned some off.
+let widgetPrefs = {};
+try { widgetPrefs = JSON.parse(localStorage.getItem('widgets')) || {}; } catch (e) {}
+const widgetEnabled = id => widgetPrefs[id] !== false;
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+// run a change that shows/hides widgets, sliding the remaining ones into their new spots
+function animateWidgets(change) {
+  const widgets = [...el.widgets.children];
+  const visible = w => w.getClientRects().length > 0;
+  const before = new Map(widgets.filter(visible).map(w => [w, w.getBoundingClientRect().top]));
+  change();
+  if (reduceMotion.matches) return;
+  for (const w of widgets) {
+    if (!visible(w)) continue;
+    if (before.has(w)) {
+      const dy = before.get(w) - w.getBoundingClientRect().top;
+      if (dy) w.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }],
+        { duration: 250, easing: 'ease-out' });
+    } else {
+      w.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250, easing: 'ease-out' });
+    }
+  }
+}
+
+function applyWidgetPrefs() {
+  for (const w of el.widgets.children) w.classList.toggle('disabled', !widgetEnabled(w.id));
+}
+
 function openSettings() {
   el.pattern.value = savedPattern;
   el.error.textContent = '';
+  el.widgetToggles.forEach(box => { box.checked = widgetEnabled(box.dataset.widget); });
   el.settings.showModal();
 }
 
@@ -266,7 +301,13 @@ function saveSettings(e) {
     }
     savedPattern = el.pattern.value;
   }
+
+  el.widgetToggles.forEach(box => { widgetPrefs[box.dataset.widget] = box.checked; });
+  try { localStorage.setItem('widgets', JSON.stringify(widgetPrefs)); } catch (err) {}
+  animateWidgets(applyWidgetPrefs);
 }
+
+applyWidgetPrefs();
 
 // theme: an explicit choice is stored; otherwise follow the OS setting.
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -338,7 +379,7 @@ let musicState = 'stopped';
 function renderMusic(status) {
   musicState = status ? status.state : 'stopped';
   const active = musicState === 'playing' || musicState === 'paused';
-  el.musicWidget.hidden = !active;
+  if (el.musicWidget.hidden === active) animateWidgets(() => { el.musicWidget.hidden = !active; });
   if (!active) return;
 
   el.musicTrack.textContent = status.track;

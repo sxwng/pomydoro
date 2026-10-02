@@ -128,7 +128,8 @@ body.break { background: var(--bg-break); }
   transition: width 0.25s linear;
 }
 
-#music-widget[hidden] {
+#music-widget[hidden],
+.widget.disabled {
   display: none;
 }
 
@@ -192,6 +193,12 @@ main {
   height: 5em;
   vertical-align: middle;
   filter: var(--img-filter);
+}
+
+/* done.png is a padded square; crop to the lettering so it matches the other titles */
+.mode-img[src$="done.png"] {
+  aspect-ratio: 1200 / 430;
+  object-fit: cover;
 }
 
 #timer {
@@ -293,6 +300,23 @@ main {
 #error {
   color: var(--error);
   min-height: 1.2em;
+}
+
+#widget-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.8rem 0.7rem;
+  border: 1px solid var(--widget-border);
+  border-radius: 8px;
+}
+
+#config #widget-toggles label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
 }
 
 .dialog-buttons {
