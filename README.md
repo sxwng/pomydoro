@@ -4,12 +4,12 @@ a cute, customizable pomodoro
 
 images drawn by @sxwng
 
-## music widget (macOS)
+## running
 
-to show Apple Music controls in the upper left, run the local helper alongside the page:
+to control apple music via the pomodoro, run
 
 ``` bash
 node music-helper.js
 ```
 
-the first time it talks to Music, macOS may ask for permission to let your terminal control Music.
+in the terminal. then open http://127.0.0.1:47823 and make sure your browser is allowed to notify in system settings -> notifications.

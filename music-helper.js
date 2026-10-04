@@ -1,6 +1,9 @@
-// local helper that lets the page see and control the macOS Music app.
-// run with: node music-helper.js
+// local helper that serves the page and lets it see and control the macOS Music app.
+// run with: node music-helper.js, then open http://127.0.0.1:47823
+// (serving from localhost makes the page a secure context, which notifications require)
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const { execFile } = require('child_process');
 
 const PORT = 47823;
@@ -50,6 +53,27 @@ async function getStatus() {
   return { state, track, artist };
 }
 
+const ROOT = __dirname;
+const TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.png': 'image/png',
+};
+
+// serves the page's own files; anything outside the project or hidden (e.g. .git) is a 404
+function serveStatic(pathname, res) {
+  const file = path.join(ROOT, pathname === '/' ? 'index.html' : decodeURIComponent(pathname));
+  const type = TYPES[path.extname(file)];
+  const hidden = path.relative(ROOT, file).split(path.sep).some(part => part.startsWith('.'));
+  if (!file.startsWith(ROOT + path.sep) || hidden || !type) return send(res, 404, { error: 'not found' });
+  fs.readFile(file, (err, data) => {
+    if (err) return send(res, 404, { error: 'not found' });
+    res.writeHead(200, { 'Content-Type': type });
+    res.end(data);
+  });
+}
+
 function send(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(body));
@@ -70,6 +94,7 @@ const server = http.createServer(async (req, res) => {
       await osascript(`if application "Music" is running then tell application "Music" to ${command}`);
       return send(res, 200, await getStatus());
     }
+    if (req.method === 'GET') return serveStatic(url.pathname, res);
     send(res, 404, { error: 'not found' });
   } catch (e) {
     send(res, 500, { error: e.message });
@@ -77,5 +102,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`music helper listening on http://127.0.0.1:${PORT}`);
+  console.log(`pomydoro running at http://127.0.0.1:${PORT}`);
 });

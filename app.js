@@ -27,11 +27,17 @@ function formatClock(ms, includeSeconds = true) {
   return time.map(n => String(n).padStart(2, '0')).join(':');
 }
 
-// short beep sequence indicating the end of a segment; returns its length in ms
+// short beep sequence indicating the end of a segment; resolves to its length in ms
 let audioCtx = null;
-function playAlarm() {
+async function playAlarm() {
   if (!audioCtx) return 0;
-  const now = audioCtx.currentTime;
+  // the browser may have suspended the context since Start (e.g. another app took the
+  // audio output, or the machine slept); beeps scheduled on a stopped clock never play
+  if (audioCtx.state !== 'running') {
+    try { await audioCtx.resume(); } catch (e) {}
+  }
+  // start slightly ahead so the first beep isn't scheduled in the past
+  const now = audioCtx.currentTime + 0.05;
   for (let i = 0; i < 3; i++) {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -93,6 +99,7 @@ const state = {
   endTime: 0,     // wall-clock ms when the current segment ends (while running)
   running: false,
   tickId: null,
+  pastSessionsMs: 0,  // time from sessions ended by reset or restart, so it isn't lost
 };
 
 // rebuild when img changes
@@ -154,7 +161,7 @@ function render() {
   // add the segments still to come after this one
   const laterMs = state.segments.slice(state.index + 1).reduce((sum, s) => sum + s.seconds * 1000, 0);
   el.totalEndTime.textContent = `End time: ${seg ? formatClock(endMs + laterMs, false) : '--:--'}`;
-  el.timeStudying.textContent = `Time studying: ${formatTime(Math.floor(elapsedMs() / 1000))}`;
+  el.timeStudying.textContent = `Time studying: ${formatTime(Math.floor((state.pastSessionsMs + elapsedMs()) / 1000))}`;
   renderSessionBar();
 
   if (!seg) {
@@ -182,12 +189,24 @@ function render() {
   el.patternLocked.hidden = !seg;
 }
 
+// system notification for a segment change (only works from a secure context, e.g. localhost)
+function notifyTransition(next) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const body = next
+    ? `${next.type === 'study' ? 'Study' : 'Break'} time: ${formatTime(next.seconds)}`
+    : 'Session finished!';
+  // silent: the alarm beep already plays
+  const n = new Notification('Pomydoro', { body, silent: true });
+  n.onclick = () => { window.focus(); n.close(); };
+}
+
 function tick() {
   state.remainingMs = state.endTime - Date.now();
   if (state.remainingMs <= 0) {
     alarmWithMusicPaused();
     state.index++;
     const next = state.segments[state.index];
+    notifyTransition(next);
     if (next) {
       // Carry over any overshoot so long runs don't drift.
       state.remainingMs = next.seconds * 1000 + state.remainingMs;
@@ -213,6 +232,7 @@ function stopTicking() {
 }
 
 function start() {
+  const finishedMs = elapsedMs();  // a finished session's time, before its segments are replaced
   try {
     state.segments = parsePattern(savedPattern);
   } catch (e) {
@@ -224,7 +244,12 @@ function start() {
   // Audio must be unlocked by a user gesture; the Start click counts.
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   audioCtx.resume();
+  // same for the notification permission prompt
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
 
+  state.pastSessionsMs += finishedMs;
   state.index = 0;
   state.remainingMs = state.segments[0].seconds * 1000;
   startTicking();
@@ -243,7 +268,9 @@ function togglePause() {
 }
 
 function reset() {
+  if (state.running) state.remainingMs = state.endTime - Date.now();
   stopTicking();
+  state.pastSessionsMs += elapsedMs();
   state.segments = [];
   state.index = 0;
   state.remainingMs = 0;
@@ -405,7 +432,7 @@ async function musicRequest(path, method = 'GET') {
 async function alarmWithMusicPaused() {
   const wasPlaying = musicState === 'playing';
   if (wasPlaying) await musicRequest('/pause', 'POST');
-  const ms = playAlarm();
+  const ms = await playAlarm();
   if (wasPlaying) setTimeout(() => musicRequest('/play', 'POST'), ms);
 }
 
