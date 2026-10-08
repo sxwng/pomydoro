@@ -1,7 +1,10 @@
 // local helper that serves the page and lets it see and control the macOS Music app.
 // run with: node music-helper.js, then open https://sxwng.github.io/pomydoro
-// (or http://127.0.0.1:47823 to use the local copy; both are secure contexts, which notifications require)
+// (or https://127.0.0.1:47823 to use the local copy; both are secure contexts, which notifications require)
+// serves https when .certs/cert.pem and .certs/key.pem exist (see README), since safari blocks
+// an https page from calling plain http, even on 127.0.0.1. without them it falls back to http.
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
@@ -81,7 +84,7 @@ function send(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-const server = http.createServer(async (req, res) => {
+async function handle(req, res) {
   const origin = req.headers.origin;
   if (!allowedOrigin(origin)) return send(res, 403, { error: 'forbidden' });
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
@@ -109,8 +112,19 @@ const server = http.createServer(async (req, res) => {
   } catch (e) {
     send(res, 500, { error: e.message });
   }
-});
+}
 
+let tls = null;
+try {
+  tls = {
+    cert: fs.readFileSync(path.join(ROOT, '.certs', 'cert.pem')),
+    key: fs.readFileSync(path.join(ROOT, '.certs', 'key.pem')),
+  };
+} catch (e) {
+  console.warn('no certificate in .certs/, serving http (the hosted page won\'t reach it in safari)');
+}
+
+const server = tls ? https.createServer(tls, handle) : http.createServer(handle);
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`pomydoro running at http://127.0.0.1:${PORT}`);
+  console.log(`pomydoro running at ${tls ? 'https' : 'http'}://127.0.0.1:${PORT}`);
 });

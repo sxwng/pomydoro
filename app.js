@@ -400,7 +400,8 @@ scheduleClock();
 
 // music widget: talks to music-helper.js, which controls the macOS Music app.
 // hidden when the helper isn't running or nothing is playing/paused.
-const MUSIC_HELPER = 'http://127.0.0.1:47823';
+// the hosted page needs the helper's https; when the helper serves this page, use whatever it serves.
+const MUSIC_HELPER = location.port === '47823' ? location.origin : 'https://127.0.0.1:47823';
 let musicState = 'stopped';
 
 function renderMusic(status) {
