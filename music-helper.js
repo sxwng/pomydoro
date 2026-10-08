@@ -1,6 +1,6 @@
 // local helper that serves the page and lets it see and control the macOS Music app.
-// run with: node music-helper.js, then open http://127.0.0.1:47823
-// (serving from localhost makes the page a secure context, which notifications require)
+// run with: node music-helper.js, then open https://sxwng.github.io/pomydoro
+// (or http://127.0.0.1:47823 to use the local copy; both are secure contexts, which notifications require)
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -8,9 +8,11 @@ const { execFile } = require('child_process');
 
 const PORT = 47823;
 
-// only the pomydoro page (opened as a file or served from localhost) may use the helper
+// only the pomydoro page (hosted, opened as a file, or served from localhost) may use the helper
+const HOSTED_ORIGIN = 'https://sxwng.github.io';
+
 function allowedOrigin(origin) {
-  if (!origin || origin === 'null') return true;
+  if (!origin || origin === 'null' || origin === HOSTED_ORIGIN) return true;
   try {
     const { hostname } = new URL(origin);
     return hostname === 'localhost' || hostname === '127.0.0.1';
@@ -83,6 +85,14 @@ const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin;
   if (!allowedOrigin(origin)) return send(res, 403, { error: 'forbidden' });
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
+
+  // preflight, including chrome's check before a public site may reach 127.0.0.1
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    res.writeHead(204);
+    return res.end();
+  }
 
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
