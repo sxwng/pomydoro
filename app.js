@@ -346,7 +346,7 @@ function currentTheme() {
 // the button shows the current theme: sun for light, moon for dark
 function renderThemeToggle() {
   const dark = currentTheme() === 'dark';
-  el.themeToggle.textContent = dark ? '\u{1F319}' : '\u2600\uFE0F';
+  el.themeToggle.innerHTML = `<img src="images/${dark ? 'moon' : 'sun'}.png" alt="">`;
   const label = dark ? 'Switch to light mode' : 'Switch to dark mode';
   el.themeToggle.setAttribute('aria-label', label);
   el.themeToggle.title = label;

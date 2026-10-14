@@ -284,6 +284,13 @@ main {
   cursor: pointer;
 }
 
+/* sized to match the 1.4rem emoji it replaced */
+#theme-toggle img {
+  display: block;
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
 #config label {
   display: block;
   margin-bottom: 0.4rem;
